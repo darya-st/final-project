@@ -1,0 +1,4 @@
+import psycopg2
+
+def connection_to_db():
+    conn = psycopg2.connect(
