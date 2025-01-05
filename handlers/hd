@@ -8,11 +8,11 @@ class UserState(telebot.handler_backends.StatesGroup):
 
 @bot.message_handler(commands=['start'])
 def start(message: telebot.types.Message):
-    text = ("/get_question - ответить на вопрос\n"
+    text = ("/answer_question - ответить на вопрос\n"
             "/my_statistic - моя статистика\n"
-            "/total_statistic - общая статистика\n"
+            "/view_statistic - общая статистика\n"
             "/add_question - добавить вопрос\n"
-            "/delete_question - удалить вопрос")
+            "/del_question - удалить вопрос")
     bot.send_message(message.from_user.id, text=f"Привет, {message.from_user.first_name}!\n"
                                                 f"Выберите действие:\n"
                                                 f"{text}", parse_mode='HTML')
@@ -22,3 +22,31 @@ def start(message: telebot.types.Message):
 def create_quiz(message: telebot.types.Message):
     bot.send_message(message.from_user.id, text="Введите свой вопрос...", parse_mode='HTML')
     bot.set_state(message.from_user.id, UserState.new_quest, message.chat.id)
+
+@bot.message_handler(state=UserState.new_qst)
+def state(message: telebot.types.Message):
+    with bot.retrieve_data(message.from_user.id) as data:
+        data['new_quest'] = message.text
+    new_quest = data['new_quest']
+    now_date = datetime.now()
+    admin_id = str(message.from_user.id)
+    #save_question(question_text=new_quest, admin_id=admin_id, date=now_date) #дописать в функциях
+    bot.send_message(message.from_user.id, text="Вопрос добавился!")
+    bot.send_message(message.from_user.id, text="Введите варианты ответов...\n"
+                                                "Каждый вариант с новой строчки")
+    bot.delete_state(message.from_user.id, message.chat.id)
+    bot.set_state(message.from_user.id, UserState.var, message.chat.id)
+
+@bot.message_handler(state=UserState.var)
+def state_new (message: telebot.types.Message):
+    admin_id = str(message.from_user.id)
+    with bot.retrieve_data(message.from_user.id) as data:
+        data['var'] = message.text
+    var = data['var']
+    for variant in var:
+        bot.send_message(message.from_user.id, text="Варианты ответов добавлены!")
+        bot.delete_state(message.from_user.id, message.chat.id)
+
+@bot.message_handler(commands=['del_question'])
+def begin(message: telebot.types.Message):
+    user_id = str(message.from_user.id)
